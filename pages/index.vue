@@ -7,7 +7,7 @@
 	<h3>
 		Discover your next favorite band.
 	</h3>
-	<a href="http://localhost:3000/api/spotify_login/send_to_spotify_for_login" class="continue-with-spotify">Continue with Spotify</a>
+	<a href="http://127.0.0.1:3000/api/spotify_login/send_to_spotify_for_login" class="continue-with-spotify">Continue with Spotify</a>
 
   </section>
 </template>
@@ -61,16 +61,18 @@ export default {
 		if (session_user) {
 			pairs.push(session_user);
 		}
+		let data;
 		if (pairs.length > 0) {
 			let token_pairs_stringified = JSON.stringify(pairs);
-			let { data } = await axios.get("/api/users/me" + token_pairs_stringified);
+			console.log(token_pairs_stringified);
+			data = await axios.get("/api/users/me" + token_pairs_stringified);
 			console.log(data);
 		} else {
 			//no user
+			data = null;
 		}
 
 		// gives us the .data field from the response?
-		let { data } = await axios.get('/api/users')
 		return { users: data }
 	  }
   },

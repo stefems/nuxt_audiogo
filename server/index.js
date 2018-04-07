@@ -1,16 +1,20 @@
 import express from 'express'
 import { Nuxt, Builder } from 'nuxt'
 
-import api from './api'
+// import api from './api'
 
 const app = express()
 const host = process.env.HOST || '127.0.0.1'
 const port = process.env.PORT || 3000
 
+var spotify_login = require('./api/routes/spotify_login');
+var user_changes = require('./api/routes/user_changes');
+
 app.set('port', port)
 
 // Import API Routes
-app.use('/api', api)
+app.use('/api/spotify_login', spotify_login);
+app.use('/api/user_changes', user_changes);
 
 // Import and Set Nuxt.js options
 let config = require('../nuxt.config.js')

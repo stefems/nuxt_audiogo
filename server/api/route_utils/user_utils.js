@@ -2,10 +2,9 @@
 const request = require('request');
 var querystring = require('querystring');
 var env;
-require("../../env_util.js").then( (env_to_use) => {
+require("../env_util.js").then( (env_to_use) => {
 	env = env_to_use;
 });
-console.log("USER UTILS INITIALIZED");
 
 let export_me = {
 	

@@ -2,11 +2,10 @@
 const request = require('request');
 var querystring = require('querystring');
 var env;
-require("../../env_util.js").then( (env_to_use) => {
+require("../env_util.js").then( (env_to_use) => {
 	env = env_to_use;
 });
-
-console.log("LOGIN UTILS INITIALIZED");
+var firebase_utils = require("../route_utils/firebase_utils.js");
 
 module.exports = {
 
@@ -75,7 +74,7 @@ module.exports = {
 		  url: 'https://accounts.spotify.com/api/token',
 		  form: {
 		    code: code,
-		    redirect_uri: env.spotify_redirect_url,
+		    redirect_uri: 'http://' + env.api_domain + '/api/spotify_login/spotify_redirect',
 		    grant_type: 'authorization_code'
 		  },
 		  headers: {
@@ -87,16 +86,15 @@ module.exports = {
 			if (!error && response.statusCode === 200 && response.statusCode != 400) {
 				var access_token = body.access_token;
 				var refresh_token = body.refresh_token;
-				let url = env.domain + '?' + querystring.stringify({
+				let url = 'http://' + env.front_end_domain + '?' + querystring.stringify({
 		            access_token: access_token,
 					refresh_token: refresh_token
 				});
-				console.log(url);
 				res.redirect(url);
 			}
 			else {
 				console.log("error: " + error);
-				res.redirect(env.domain + "?error=spotify_access_token_request_failed");
+				res.redirect("http://" + env.front_end_domain + "?error=spotify_access_token_request_failed");
 			}
 		});
 	}
