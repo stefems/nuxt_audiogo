@@ -9,18 +9,18 @@ const request = require('request');
 var env, database;
 var user_utils = require("../route_utils/user_utils.js");
 
-// require("../env_util.js").then( (env_to_use) => {
-// 	env = env_to_use;
-// 	init_firebase();
-// });
-
-init_firebase();
+require("../env_util.js").then( (env_to_use) => {
+	env = env_to_use;
+	init_firebase();
+});
 
 function init_firebase() {
 	admin.initializeApp({
 		credential: admin.credential.cert(serviceAccount),
 		databaseURL: "https://showgov2.firebaseio.com"
 	  });
+	database = admin.database();
+
 }
 
 function store_artists(artist_list_object) {

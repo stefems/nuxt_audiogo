@@ -7,8 +7,8 @@
 	<h3>
 		Discover your next favorite band.
 	</h3>
+	<h6>{{$store.state.display_name}}</h6>
 	<a href="http://127.0.0.1:3000/api/spotify_login/send_to_spotify_for_login" class="continue-with-spotify">Continue with Spotify</a>
-
   </section>
 </template>
 
@@ -16,6 +16,7 @@
 import axios from "~/plugins/axios";
 
 export default {
+ 
   methods: {
 	  get_user: async function() {
 
@@ -43,9 +44,9 @@ export default {
 			) {
 				return {
 				access_token: JSON.parse(sessionStorage.getItem("showgo_user"))
-				.access_token,
+				.spotify_access_token,
 				refresh_token: JSON.parse(sessionStorage.getItem("showgo_user"))
-				.refresh_token
+				.spotify_refresh_token
 				};
 			} else {
 				return null;
@@ -64,16 +65,15 @@ export default {
 		let data;
 		if (pairs.length > 0) {
 			let token_pairs_stringified = JSON.stringify(pairs);
-			console.log(token_pairs_stringified);
-			data = await axios.get("/api/users/me" + token_pairs_stringified);
-			console.log(data);
+			data = (await axios.get("/api/user_changes/user?access_refresh_pairs=" + token_pairs_stringified)).data;
+			this.$store.commit('store_user', data);
+			this.$router.push("/discover");
 		} else {
 			//no user
 			data = null;
 		}
 
-		// gives us the .data field from the response?
-		return { users: data }
+		return { user: data }
 	  }
   },
   head() {

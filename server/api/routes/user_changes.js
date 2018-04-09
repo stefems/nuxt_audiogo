@@ -44,6 +44,9 @@ router.get('/user', function(req, res) {
 			firebase_utils.get_user(user_from_spotify).then( (user) => {
 				console.log("  Sending user.\n\n");
 				res.json(user);
+			})
+			.catch( (error) => {
+				console.log(error);
 			});
 		}
 		else {
@@ -53,6 +56,10 @@ router.get('/user', function(req, res) {
 		
 	})
 	.catch( (refresh_token_to_use) => {
+		console.log("failed to use access token");
+		// res.status(500).send({ error: "  We failed to retrieve the user." });
+
+		// TODO: test this out
 		login_utils.use_refresh_token(refresh_token_to_use).then( (access_token) => {
 			let token_promise = new Promise( (resolve, refresh) => {
 				login_utils.get_spotify_user([{access_token: access_token}], resolve, refresh);
