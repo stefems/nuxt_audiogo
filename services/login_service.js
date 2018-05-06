@@ -48,7 +48,6 @@ export default {
 				pairs.push(session_user);
 			}
 			let data;
-			console.log(this);
 			if (pairs.length > 0) {
 				let token_pairs_stringified = JSON.stringify(pairs);
 				axios.get("/api/user_changes/user?access_refresh_pairs=" + token_pairs_stringified).then( function(data) {

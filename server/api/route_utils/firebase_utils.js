@@ -23,6 +23,28 @@ function init_firebase() {
 
 }
 
+function get_user_from_token(token) {
+	let get_promise = new Promise( (resolve) => {
+		database.ref("users").orderByChild("spotify_access_token").equalTo(token).once("value", function(snapshot) {
+			if (snapshot.val()) {
+				Object.entries(snapshot.val()).forEach(
+					([key, value]) => {
+						resolve(value);
+					}
+				);
+				
+				return;
+			}
+			else {
+				resolve(null);
+				return;
+			}
+		});
+	});
+
+	return get_promise;
+}
+
 function store_artists(artist_list_object) {
 	console.log("\nUpdating Artist Info")
 	let new_artists = get_new_artists(artist_list_object);
@@ -215,5 +237,6 @@ function create_user(spotify_user) {
 
 module.exports = {
 	get_user: get_user,
-	save_user: save_user
+	save_user: save_user,
+	get_user_from_token: get_user_from_token
 };

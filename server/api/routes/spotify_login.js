@@ -29,7 +29,7 @@ router.get('/send_to_spotify_for_login', function(req, res) {
 	var state = generateRandomString(16);
 	res.cookie(stateKey, state);
 	//application requests authorization
-	var scope = 'user-read-birthdate user-read-currently-playing user-read-playback-state user-modify-playback-state streaming user-read-private playlist-read-collaborative user-read-email user-library-read user-read-recently-played user-top-read user-follow-read';
+	var scope = 'playlist-modify-private playlist-modify-public user-read-birthdate user-read-currently-playing user-read-playback-state user-modify-playback-state streaming user-read-private playlist-read-collaborative user-read-email user-library-read user-read-recently-played user-top-read user-follow-read';
 	res.redirect('https://accounts.spotify.com/authorize?' +
 	querystring.stringify({
 	  response_type: 'code',

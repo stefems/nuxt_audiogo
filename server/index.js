@@ -9,12 +9,18 @@ const port = process.env.PORT || 3000
 
 var spotify_login = require('./api/routes/spotify_login');
 var user_changes = require('./api/routes/user_changes');
+var artists = require('./api/routes/artists');
+var users = require('./api/routes/users');
+
 
 app.set('port', port)
 
 // Import API Routes
 app.use('/api/spotify_login', spotify_login);
 app.use('/api/user_changes', user_changes);
+app.use('/api/artists', artists);
+app.use('/api/users', users);
+
 
 // Import and Set Nuxt.js options
 let config = require('../nuxt.config.js')

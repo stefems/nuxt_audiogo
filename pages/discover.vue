@@ -11,7 +11,13 @@
 	</div>
 
 	<div class="player" v-if="show_player">
-		<h4 v-if="device_id != ''">Player Ready</h4>
+		<div v-if="device_id != ''">
+			<h4 v-if="current_track.playing == 'true'" v-on:click="pause()">Pause</h4> 
+			<h4 v-if="current_track.playing == 'false'" v-on:click="play()">Play</h4>
+			<h5>{{current_track.name}}</h5>
+			<h5>{{current_track.artist}}</h5>
+			<h5>{{current_track.album}}</h5>
+		</div>
 		<script src="https://sdk.scdn.co/spotify-player.js"></script>
 	</div>
 
@@ -21,6 +27,7 @@
 <script>
 import axios from "~/plugins/axios";
 import spotify_endpoints from "../services/spotify_endpoints.js";
+import { setInterval } from 'timers';
 
 
 export default {
@@ -30,20 +37,36 @@ export default {
 			token: '',
 			title: 'Root',
 			show_player: false,
-			device_id: ''
+			device_id: '',
+			current_track: {
+				name: '',
+				id: '',
+				length: 0,
+				album: '',
+				image: {
+					src: ''
+				},
+				artist: '',
+				time: 0,
+				playing: null
+			}
 		}
 	},
 	methods: {
+		millisToMinutesAndSeconds: function(millis) {
+			var minutes = Math.floor(millis / 60000);
+			var seconds = ((millis % 60000) / 1000).toFixed(0);
+			return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+		},
 		open_stream: function(bubble) {
 			this.artist_bubbles = [bubble];
 			this.title = "Tree";
 			this.show_player = true;
-			window.onSpotifyWebPlaybackSDKReady = () => {
-				const token = this.token; //'[My Spotify Web API access token]';
+			window.onSpotifyWebPlaybackSDKReady = function(){
+				const token = this.token;
 				const player = new Spotify.Player({
 					name: 'Web Playback SDK Quick Start Player',
 					getOAuthToken: cb => {
-
 						cb(token);
 					}
 				});
@@ -54,20 +77,52 @@ export default {
 				player.addListener('account_error', ({ message }) => { console.error(message); });
 				player.addListener('playback_error', ({ message }) => { console.error(message); });
 
-				// Playback status updates
-				player.addListener('player_state_changed', state => { console.log(state); });
+				player.addListener('player_state_changed', function(state) {
+					console.log(state);
+					if (!state.paused) {
+						this.current_track.playing = "true";
+					}
+					else if (state.paused) {
+						this.current_track.playing = "false";
+					}
+				}.bind(this));
 
 				// Ready
 				player.addListener('ready', function({ device_id }) {
 					this.device_id = device_id;
-					spotify_endpoints.get_song(this.artist_bubbles[0].id, this.token).then( function(track_id) {
-						spotify_endpoints.set_track(track_id, this.token, this.device_id);
+					//need to create another spotify_endpoints function that instead uses the id to get the
+					// playlist. This playlist is then returned.
+					spotify_endpoints.get_playlist(this.artist_bubbles[0].id, this.token, this.$store.state.user.id).then( function(playlist) {
+						spotify_endpoints.set_playlist(playlist.uri, this.token, this.device_id).then( function(first_track){
+							spotify_endpoints.get_playing(token).then( function(playing) {
+								this.current_track = {
+									id: "s",
+									name: "etst",
+									album: "test",
+									image: null,
+									artist: "test",
+									length: 1,
+									time: 0,
+									playing: null
+								};
+								spotify_endpoints.play(token).then( function(result) {
+									console.log("should be playing");
+								}, function(error) {
+									console.log(error);
+								});
+							}.bind(this), function(error) {
+								console.log(error);
+							});
+							
+						}.bind(this), function(error) {
+							console.log(error);
+						});
 					}.bind(this));
 				}.bind(this));
 
 				// Connect to the player!
 				player.connect();
-			};
+			}.bind(this);
 		},
 		set_artist_bubbles: function(top_artists) {
 			let artists_chosen = [];
@@ -105,7 +160,18 @@ export default {
 			}
 			
 			this.load_all_artists(artists_chosen);
+		},
+		pause: function() {
+			spotify_endpoints.pause(this.token).then( function() {
+				console.log("paused");
+			}.bind(this));
+		},
+		play: function() {
+			spotify_endpoints.play(this.token).then( function() {
+				console.log("playing");
+			}.bind(this));
 		}
+		
 	},
 	beforeMount() {
 		var images = this.artist_images;
@@ -122,6 +188,10 @@ export default {
 </script>
 
 <style scoped>
+.active {
+	text-decoration: underline;
+}
+
 .nav-text {
 	font-size: 10px;
     vertical-align: middle;
