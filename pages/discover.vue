@@ -12,10 +12,13 @@
 
 	<div class="player" v-if="show_player">
 		<div v-if="device_id != ''">
-			<h4 v-if="current_track.playing == 'true'" v-on:click="pause()">Pause</h4> 
-			<h4 v-if="current_track.playing == 'false'" v-on:click="play()">Play</h4>
+			<button v-if="current_track.playing == true" v-on:click="pause()">Pause</button> 
+			<button v-if="current_track.playing == false" v-on:click="play()">Play</button>
+			<button v-on:click="skip()">Skip</button>
+			<button v-on:click="loop()">Loop</button>
+			<button v-on:click="offshoot()">Offshoot</button>
 			<h5>{{current_track.name}}</h5>
-			<h5>{{current_track.artist}}</h5>
+			<h5>{{current_track.artist_name}}</h5>
 			<h5>{{current_track.album}}</h5>
 		</div>
 		<script src="https://sdk.scdn.co/spotify-player.js"></script>
@@ -46,7 +49,8 @@ export default {
 				image: {
 					src: ''
 				},
-				artist: '',
+				artist_id: '',
+				artist_name: '',
 				time: 0,
 				playing: null
 			}
@@ -78,49 +82,30 @@ export default {
 				player.addListener('playback_error', ({ message }) => { console.error(message); });
 
 				player.addListener('player_state_changed', function(state) {
-					console.log(state);
 					if (!state.paused) {
-						this.current_track.playing = "true";
+						this.current_track = {
+							id: state.track_window.current_track.id,
+							name: state.track_window.current_track.name,
+							album: state.track_window.current_track.album.name,
+							image: state.track_window.current_track.album.images[0].url || null,
+							artist_name: state.track_window.current_track.artists[0].name,
+							artist_id: state.track_window.current_track.artists[0].uri.split("spotify:artist:")[1],
+							length: state.track_window.current_track.duration_ms,
+							time: state.position,
+							playing: true
+						};
 					}
 					else if (state.paused) {
-						this.current_track.playing = "false";
+						this.current_track.playing = false;
 					}
 				}.bind(this));
 
 				// Ready
 				player.addListener('ready', function({ device_id }) {
 					this.device_id = device_id;
-					//need to create another spotify_endpoints function that instead uses the id to get the
-					// playlist. This playlist is then returned.
-					spotify_endpoints.get_playlist(this.artist_bubbles[0].id, this.token, this.$store.state.user.id).then( function(playlist) {
-						spotify_endpoints.set_playlist(playlist.uri, this.token, this.device_id).then( function(first_track){
-							spotify_endpoints.get_playing(token).then( function(playing) {
-								this.current_track = {
-									id: "s",
-									name: "etst",
-									album: "test",
-									image: null,
-									artist: "test",
-									length: 1,
-									time: 0,
-									playing: null
-								};
-								spotify_endpoints.play(token).then( function(result) {
-									console.log("should be playing");
-								}, function(error) {
-									console.log(error);
-								});
-							}.bind(this), function(error) {
-								console.log(error);
-							});
-							
-						}.bind(this), function(error) {
-							console.log(error);
-						});
-					}.bind(this));
+					this.prepare_playlist(this.artist_bubbles[0].id);
 				}.bind(this));
 
-				// Connect to the player!
 				player.connect();
 			}.bind(this);
 		},
@@ -161,6 +146,14 @@ export default {
 			
 			this.load_all_artists(artists_chosen);
 		},
+		prepare_playlist: function(artist_id, offshoot) {
+			spotify_endpoints.get_playlist(artist_id, this.token, this.$store.state.user.id).then( function(playlist_id) {
+				spotify_endpoints.set_playlist(playlist_id, this.token, this.device_id).then( function(){			
+				}.bind(this), function(error) {
+					console.log(error);
+				});
+			}.bind(this));
+		},
 		pause: function() {
 			spotify_endpoints.pause(this.token).then( function() {
 				console.log("paused");
@@ -170,6 +163,22 @@ export default {
 			spotify_endpoints.play(this.token).then( function() {
 				console.log("playing");
 			}.bind(this));
+		},
+		skip: function() {
+			spotify_endpoints.skip(this.token).then( function() {
+				console.log("skipping");
+			}.bind(this));
+		},
+		loop: function() {
+			spotify_endpoints.loop(this.token).then( function() {
+				console.log("looping");
+			}.bind(this));
+		},
+		offshoot: function() {
+			console.log(this.current_track.artist_id);
+			//todo: new method that uses lots of the same methods but can't overwrite the
+			// current playlist and needs to build a new one with which to tack onto the current playlist.
+			// this.prepare_playlist(this.current_track.artist_id, true);
 		}
 		
 	},
