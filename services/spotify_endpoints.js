@@ -22,6 +22,18 @@ function get_song(artist_id, token) {
 	return artist_track_promise;
 }
 
+function get_songs(artist_id, token) {
+	axios.defaults.headers.common['Authorization'] = "Bearer " + token;
+
+	let artist_track_promise = new Promise( (resolve) => {
+		axios.get("https://api.spotify.com/v1/artists/" + artist_id + "/top-tracks?country=US").then( (result) => {
+			resolve( result.data.tracks);
+		});
+	});
+
+	return artist_track_promise;
+}
+
 function play(token) {
 	axios.defaults.headers.common['Authorization'] = "Bearer " + token;
 	let play_promise = new Promise( (resolve) => {
@@ -39,7 +51,9 @@ function play(token) {
 
 export default {
 
-
+	get_songs: get_songs,
+	get_song: get_song,
+	play: play,
 	get_playlist: function(artist_id, token, user_id) {
 		let playlist_promise = new Promise( (resolve) => {
 			axios.get("/api/artists/get_similar_artists/" + artist_id + "?access_token=" + token).then( (result) => {
@@ -90,7 +104,7 @@ export default {
 						}
 						function add_songs(playlist_id) {
 							axios.put("https://api.spotify.com/v1/users/" + user_id + "/playlists/" + playlist_id + "/tracks?uris=" + string_track_ids).then( (result) => {
-								resolve(uri);
+								resolve({uri: uri, playlist_id: playlist_id});
 							}).catch( (error) => {
 								console.log(error);
 							});
@@ -123,7 +137,6 @@ export default {
 
 		return artist_image_promise;
 	},
-	get_song: get_song,
 	set_playlist: function(playlist_id, token, device_id) {
 		axios.defaults.headers.common['Authorization'] = "Bearer " + token;
 		let body = {
@@ -209,7 +222,6 @@ export default {
 
 		return pause_promise;
 	},
-	play: play,
 	skip: function(token) {
 		axios.defaults.headers.common['Authorization'] = "Bearer " + token;
 
@@ -220,17 +232,50 @@ export default {
 		});
 		return skip_promise;
 	},
-	loop: function(token) {
-		//needs to grab another song from this band and insert them into the playlist. Each new song that is played will queue another one to be 
-		// added, and if the user toggles the loop off, the next song will get removed and the rest of the playlist will continue.
+	loop: function(current_track, user, track_ids_not_to_use, playlist_id) {
 		axios.defaults.headers.common['Authorization'] = "Bearer " + token;
-
-		let skip_promise = new Promise( (resolve) => {
-			axios.post("https://api.spotify.com/v1/me/player/next").then( (result) => {
+		let artist_id = current_track.artist_id;
+		let token = user.spotify_access_token;
+		let new_loop_track_promise = new Promise( (resolve) => {
+			this.get_songs(artist_id, token).then( (songs) => {
+				let new_song_to_play;
+				for (let song_index = 0; song_index < songs.length; song_index++) {
+					let song = songs[song_index];
+					if (track_ids_not_to_use.indexOf(song.id) == -1) {
+						new_song_to_play = song;
+						break;
+					}
+				}
+				if (new_song_to_play) {
+					//get the location in the playlist to insert the song
+					axios.get("https://api.spotify.com/v1/users/" + user.id + "/playlists/" + playlist_id).then( (result) => {
+						let track_index;
+						for (let i = 0; i < result.data.tracks.items.length; i++){
+							let track = result.data.tracks.items[i].track;
+							if (track.id == current_track.id) {
+								track_index = i + 1;
+								break;
+							}
+						}
+						//use new_song_to_play
+						axios.post("https://api.spotify.com/v1/users/" + user.id + "/playlists/" + playlist_id + "/tracks?position=" + track_index + "&uris=" + new_song_to_play.uri).then( () => {
+							resolve(new_song_to_play.id);
+							return;
+						});
+					});
+				}
+				else {
+					//no songs left (we could send anoter request)
+					resolve();
+					return;
+				}
+			}).catch( (error) => {
+				//error when getting songs for this artist
 				resolve();
+				return;
 			});
 		});
-		return skip_promise;
-	}
+		return new_loop_track_promise;
+	},
 }
 

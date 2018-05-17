@@ -15,7 +15,8 @@
 			<button v-if="current_track.playing == true" v-on:click="pause()">Pause</button> 
 			<button v-if="current_track.playing == false" v-on:click="play()">Play</button>
 			<button v-on:click="skip()">Skip</button>
-			<button v-on:click="loop()">Loop</button>
+			<button v-on:click="toggle_loop()">Loop</button>
+			<h6>loop status: {{loop_status}}</h6>
 			<button v-on:click="offshoot()">Offshoot</button>
 			<h5>{{current_track.name}}</h5>
 			<h5>{{current_track.artist_name}}</h5>
@@ -41,6 +42,7 @@ export default {
 			title: 'Root',
 			show_player: false,
 			device_id: '',
+			loop_status: false,
 			current_track: {
 				name: '',
 				id: '',
@@ -53,7 +55,9 @@ export default {
 				artist_name: '',
 				time: 0,
 				playing: null
-			}
+			},
+			loop_track_ids: '',
+			playlist_id: ''
 		}
 	},
 	methods: {
@@ -83,6 +87,11 @@ export default {
 
 				player.addListener('player_state_changed', function(state) {
 					if (!state.paused) {
+						if (state.position == 0 && this.current_track.id != state.track_window.current_track.id) {
+							if (this.loop_status) {
+								this.loop();
+							}
+						}
 						this.current_track = {
 							id: state.track_window.current_track.id,
 							name: state.track_window.current_track.name,
@@ -94,6 +103,7 @@ export default {
 							time: state.position,
 							playing: true
 						};
+						
 					}
 					else if (state.paused) {
 						this.current_track.playing = false;
@@ -147,8 +157,9 @@ export default {
 			this.load_all_artists(artists_chosen);
 		},
 		prepare_playlist: function(artist_id, offshoot) {
-			spotify_endpoints.get_playlist(artist_id, this.token, this.$store.state.user.id).then( function(playlist_id) {
-				spotify_endpoints.set_playlist(playlist_id, this.token, this.device_id).then( function(){			
+			spotify_endpoints.get_playlist(artist_id, this.token, this.$store.state.user.id).then( function(uri_and_playlist_id) {
+				this.playlist_id = uri_and_playlist_id.playlist_id;
+				spotify_endpoints.set_playlist(uri_and_playlist_id.uri, this.token, this.device_id).then( function(){
 				}.bind(this), function(error) {
 					console.log(error);
 				});
@@ -169,16 +180,38 @@ export default {
 				console.log("skipping");
 			}.bind(this));
 		},
+		toggle_loop: function() {
+			this.loop_status = !this.loop_status;
+			if (this.loop_status) {
+				this.loop_track_ids += this.current_track.id + ",";
+				//queue song
+				this.loop();
+			}
+			else {
+				//unqueue song
+				this.unloop();
+			}
+		},
 		loop: function() {
-			spotify_endpoints.loop(this.token).then( function() {
-				console.log("looping");
+			console.log("queueing loop song");
+			spotify_endpoints.loop(this.current_track, this.$store.state.user, this.loop_track_ids, this.playlist_id).then( function(id) {
+				this.loop_track_ids += id + ",";
 			}.bind(this));
+		},
+		unloop: function() {
+			console.log("removing queued loop song");
+			//clear out the loop_track_ids
+			// spotify_endpoints.loop(this.token).then( function() {
+			// 	console.log("looping");
+			// 	//get one track from this artist
+			// 	//insert this track after the current song (but make sure to insert and not wipe out the other songs in the stream.)
+			// }.bind(this));
 		},
 		offshoot: function() {
 			console.log(this.current_track.artist_id);
-			//todo: new method that uses lots of the same methods but can't overwrite the
-			// current playlist and needs to build a new one with which to tack onto the current playlist.
-			// this.prepare_playlist(this.current_track.artist_id, true);
+			//get the similar artists to this artist
+			//get their tracks
+			//add the tracks after the current song (thereby wiping out the previous stream's songs)
 		}
 		
 	},
