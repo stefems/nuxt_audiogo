@@ -10,6 +10,7 @@ var firebase_utils = require("../route_utils/firebase_utils.js");
 module.exports = {
 
 	get_spotify_user: function(token_pairs, resolve, refresh) {
+		console.log("get_spotify_user()");
 		if (token_pairs.length > 0) {
 			var authOptions = {
 				url: 'https://api.spotify.com/v1/me',
@@ -41,6 +42,7 @@ module.exports = {
 	},
 
 	use_refresh_token: function(token, res_callback) {
+		console.log("use_refresh_token()");
 		let refresh_token_promise = new Promise ( (resolve) => {
 			var authOptions = {
 		      url: 'https://accounts.spotify.com/api/token',
@@ -69,7 +71,6 @@ module.exports = {
 
 	get_spotify_access_token: function(code, res) {
 		console.log("get_spotify_access_token()");
-
 		var authOptions = {
 		  url: 'https://accounts.spotify.com/api/token',
 		  form: {

@@ -15,3 +15,5 @@ build
 
 .env/
 .DS_Store
+./server/api/showgov2-firebase-adminsdk-aw55x-749dcb4123.json
+server/api/.env
