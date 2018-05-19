@@ -49,11 +49,40 @@ function play(token) {
 	return play_promise;
 }
 
+function set_playlist(playlist_id, token, device_id) {
+	axios.defaults.headers.common['Authorization'] = "Bearer " + token;
+	let body = {
+		"context_uri": playlist_id,
+		"offset": {
+			"position": 0
+		}
+	}
+	if (device_id) {
+		device_id = "?device_id=" + device_id;
+	}
+	else {
+		device_id = '';
+	}
+	let play_track_promise = new Promise( (resolve) => {
+		axios.put("https://api.spotify.com/v1/me/player/play" + device_id, body).then( (result) => {
+			resolve();
+			return;
+		}).catch( (error) => {
+			console.log(error);
+			resolve();
+			return;
+		});
+	});
+
+	return play_track_promise;
+}
+
 export default {
 
 	get_songs: get_songs,
 	get_song: get_song,
 	play: play,
+	set_playlist: set_playlist,
 	get_playlist: function(artist_id, token, user_id) {
 		let playlist_promise = new Promise( (resolve) => {
 			axios.get("/api/artists/get_similar_artists/" + artist_id + "?access_token=" + token).then( (result) => {
@@ -82,14 +111,19 @@ export default {
 					axios.get("https://api.spotify.com/v1/users/" + user_id + "/playlists").then( (result) => {
 						let test_id = '';
 						let uri = '';
-						result.data.items.forEach( (playlist) => {
+						let audiotree_playlist = {};
+						for (let i = 0; i < result.data.items.length; i++) {
+							let playlist = result.data.items[i];
 							if (playlist.name == "audiotree-test") {
-								test_id = playlist.id;
-								uri = playlist.uri;
+								audiotree_playlist = playlist;
+								break;
 							}
-						});
-						if (test_id != '') {
-							add_songs(test_id);
+						}
+						if (audiotree_playlist.id != '') {
+							axios.get("https://api.spotify.com/v1/users/" + user_id + "/playlists/" + audiotree_playlist.id).then( (result) => {
+								audiotree_playlist = result.data;
+								add_songs(audiotree_playlist);
+							});
 						}
 						else {
 							create_playlist();
@@ -97,14 +131,17 @@ export default {
 						function create_playlist() {
 							axios.post("https://api.spotify.com/v1/users/" + user_id + "/playlists", {"name": "audiotree-test"}).then( (result) => {
 								let new_playlist_id = result.data.id;
-								add_songs(new_playlist_id);
+								playlist = result.data;
+								add_songs(playlist);
 							}).catch( (error) => {
 								console.log(error);
 							});
 						}
-						function add_songs(playlist_id) {
-							axios.put("https://api.spotify.com/v1/users/" + user_id + "/playlists/" + playlist_id + "/tracks?uris=" + string_track_ids).then( (result) => {
-								resolve({uri: uri, playlist_id: playlist_id});
+						function add_songs(playlist_to_change) {
+							axios.put("https://api.spotify.com/v1/users/" + user_id + "/playlists/" + playlist_to_change.id + "/tracks?uris=" + string_track_ids).then( (result) => {
+								axios.get("https://api.spotify.com/v1/users/" + user_id + "/playlists/" + playlist_to_change.id).then( (result) => {
+									resolve(result.data);
+								});
 							}).catch( (error) => {
 								console.log(error);
 							});
@@ -136,27 +173,6 @@ export default {
 		});
 
 		return artist_image_promise;
-	},
-	set_playlist: function(playlist_id, token, device_id) {
-		axios.defaults.headers.common['Authorization'] = "Bearer " + token;
-		let body = {
-			"context_uri": playlist_id,
-			"offset": {
-				"position": 0
-			}
-		}
-		let play_track_promise = new Promise( (resolve) => {
-			axios.put("https://api.spotify.com/v1/me/player/play?device_id=" + device_id, body).then( (result) => {
-				resolve();
-				return;
-			}).catch( (error) => {
-				console.log(error);
-				resolve();
-				return;
-			});
-		});
-
-		return play_track_promise;
 	},
 	offshoot_playlist: function(playlist_id, token, device_id) {
 		axios.defaults.headers.common['Authorization'] = "Bearer " + token;
@@ -196,14 +212,13 @@ export default {
 
 		return get_playing_promise;
 	},
-	set_track: function(track_id, token, device_id) {
+	set_track: function(track_uri, token, device_id) {
 		axios.defaults.headers.common['Authorization'] = "Bearer " + token;
 		let body = {
-			uris: [track_id]
+			uris: [track_uri]
 		}
 		let play_track_promise = new Promise( (resolve) => {
 			axios.put("https://api.spotify.com/v1/me/player/play?device_id=" + device_id, body).then( (result) => {
-				console.log("song loaded");
 			}).catch( (error) => {
 				console.log(error);
 			});
@@ -232,7 +247,7 @@ export default {
 		});
 		return skip_promise;
 	},
-	loop: function(current_track, user, track_ids_not_to_use, playlist_id) {
+	loop: function(current_track, user, track_ids_not_to_use, playlist) {
 		axios.defaults.headers.common['Authorization'] = "Bearer " + token;
 		let artist_id = current_track.artist_id;
 		let token = user.spotify_access_token;
@@ -248,18 +263,20 @@ export default {
 				}
 				if (new_song_to_play) {
 					//get the location in the playlist to insert the song
-					axios.get("https://api.spotify.com/v1/users/" + user.id + "/playlists/" + playlist_id).then( (result) => {
+					axios.get("https://api.spotify.com/v1/users/" + user.id + "/playlists/" + playlist.id).then( (result) => {
 						let track_index;
+						let track;
 						for (let i = 0; i < result.data.tracks.items.length; i++){
-							let track = result.data.tracks.items[i].track;
+							track = result.data.tracks.items[i].track;
 							if (track.id == current_track.id) {
 								track_index = i + 1;
 								break;
 							}
 						}
-						//use new_song_to_play
-						axios.post("https://api.spotify.com/v1/users/" + user.id + "/playlists/" + playlist_id + "/tracks?position=" + track_index + "&uris=" + new_song_to_play.uri).then( () => {
-							resolve(new_song_to_play.id);
+						console.log(track_index);
+						//use new_song_to_play and place in the playlist
+						axios.post("https://api.spotify.com/v1/users/" + user.id + "/playlists/" + playlist.id + "/tracks?position=" + track_index + "&uris=" + new_song_to_play.uri).then( () => {
+							resolve(new_song_to_play);
 							return;
 						});
 					});

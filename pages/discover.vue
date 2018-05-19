@@ -21,6 +21,10 @@
 			<h5>{{current_track.name}}</h5>
 			<h5>{{current_track.artist_name}}</h5>
 			<h5>{{current_track.album}}</h5>
+			<hr>
+			<div v-if="playlist.tracks">
+				<h5>{{playlist.tracks.items[current_track.playlist_index + 1].track.name}}</h5>
+			</div>
 		</div>
 		<script src="https://sdk.scdn.co/spotify-player.js"></script>
 	</div>
@@ -54,10 +58,12 @@ export default {
 				artist_id: '',
 				artist_name: '',
 				time: 0,
-				playing: null
+				playing: null,
+				playlist_index: -1
 			},
 			loop_track_ids: '',
-			playlist_id: ''
+			playlist: {},
+			almost_over: false
 		}
 	},
 	methods: {
@@ -86,9 +92,29 @@ export default {
 				player.addListener('playback_error', ({ message }) => { console.error(message); });
 
 				player.addListener('player_state_changed', function(state) {
+					// console.log(state);
 					if (!state.paused) {
+						if (this.current_track.length > 0 && state.position >= this.current_track.length - 20000) {
+							this.almost_over = true;
+						}
+						//if a new track has loaded
 						if (state.position == 0 && this.current_track.id != state.track_window.current_track.id) {
+							console.log("new track loaded");
+							this.current_track = {
+								id: state.track_window.current_track.id,
+								name: state.track_window.current_track.name,
+								album: state.track_window.current_track.album.name,
+								image: state.track_window.current_track.album.images[0].url || null,
+								artist_name: state.track_window.current_track.artists[0].name,
+								artist_id: state.track_window.current_track.artists[0].uri.split("spotify:artist:")[1],
+								length: state.track_window.current_track.duration_ms,
+								time: state.position,
+								playing: true,
+								playlist_index: this.current_track.playlist_index + 1
+							};
+							this.almost_over = false;
 							if (this.loop_status) {
+								console.log("adding a looped song");
 								this.loop();
 							}
 						}
@@ -101,12 +127,15 @@ export default {
 							artist_id: state.track_window.current_track.artists[0].uri.split("spotify:artist:")[1],
 							length: state.track_window.current_track.duration_ms,
 							time: state.position,
-							playing: true
+							playing: true,
+							playlist_index: this.current_track.playlist_index
 						};
-						
 					}
 					else if (state.paused) {
 						this.current_track.playing = false;
+						if (state.position == 0 && this.almost_over) {
+							this.play_next();
+						}
 					}
 				}.bind(this));
 
@@ -157,9 +186,10 @@ export default {
 			this.load_all_artists(artists_chosen);
 		},
 		prepare_playlist: function(artist_id, offshoot) {
-			spotify_endpoints.get_playlist(artist_id, this.token, this.$store.state.user.id).then( function(uri_and_playlist_id) {
-				this.playlist_id = uri_and_playlist_id.playlist_id;
-				spotify_endpoints.set_playlist(uri_and_playlist_id.uri, this.token, this.device_id).then( function(){
+			spotify_endpoints.get_playlist(artist_id, this.token, this.$store.state.user.id).then( function(playlist) {
+				this.playlist = playlist;
+				console.log(playlist);
+				spotify_endpoints.set_track(this.playlist.tracks.items[0].track.uri, this.token, this.device_id).then( function(){
 				}.bind(this), function(error) {
 					console.log(error);
 				});
@@ -172,7 +202,10 @@ export default {
 		},
 		play: function() {
 			spotify_endpoints.play(this.token).then( function() {
-				console.log("playing");
+			}.bind(this));
+		},
+		play_next: function() {
+			spotify_endpoints.set_track(this.playlist.tracks.items[this.current_track.playlist_index + 1].track.uri, this.token, this.device_id).then( function() {
 			}.bind(this));
 		},
 		skip: function() {
@@ -193,9 +226,9 @@ export default {
 			}
 		},
 		loop: function() {
-			console.log("queueing loop song");
-			spotify_endpoints.loop(this.current_track, this.$store.state.user, this.loop_track_ids, this.playlist_id).then( function(id) {
-				this.loop_track_ids += id + ",";
+			spotify_endpoints.loop(this.current_track, this.$store.state.user, this.loop_track_ids, this.playlist).then( function(track) {
+				this.playlist.tracks.items.splice(this.current_track.playlist_index + 1, 0, {track: track});
+				this.loop_track_ids += track.id + ",";
 			}.bind(this));
 		},
 		unloop: function() {
