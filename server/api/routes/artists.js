@@ -27,12 +27,13 @@ router.get('/get_similar_artists/:id', function(req, res) {
 function get_similar_artists(artist_id, token) {
 	let similar_artists_promise = new Promise( function(resolve) {
 		//todo: add in the other source functions from_bandcamp from_lastfm
-		Promise.all([from_spotify(artist_id, token)]).then( (similar_bands) => {
+		Promise.all([from_spotify(artist_id, token), Promise.resolve([])]).then( (similar_bands) => {
 			let band_mapping = {};
-			similar_bands.forEach( (band_id) => {
-				band_mapping[band_id] = band_id;
+			//todo: add in the concats for the other arrays once we add bandcamp and lastfm
+			similar_bands = similar_bands[0].concat(similar_bands[1]);
+			similar_bands.forEach( (band) => {
+				band_mapping[band] = band;
 			});
-
 			filter_already_discovered(band_mapping, token).then( function(filtered_bands) {
 				resolve(filtered_bands);
 			});
@@ -53,6 +54,9 @@ function filter_already_discovered(band_map, token) {
 				([key, value]) => {
 					if (!artists[key]) {
 						unique.push(key);
+					}
+					else {
+						// console.log("artist " + artists[key] + " already discovered");
 					}
 				}
 			);

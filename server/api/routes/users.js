@@ -26,4 +26,17 @@ router.get('/me', function(req, res) {
 	});
 });
 
+router.put("/discover", function(req, res) {
+	let token = req.query.access_token;
+	let artist = {};
+	artist.id = req.query.artist_id;
+	artist.name = req.query.artist_name;
+	firebase_utils.get_user_from_token(token).then( (user) => {
+		if (user) {
+			firebase_utils.add_artist(user, artist);
+		}
+		req.send("mhm");
+	});
+});
+
 module.exports = router;

@@ -45,7 +45,8 @@ function get_user_from_token(token) {
 	return get_promise;
 }
 
-function store_artists(artist_list_object) {
+function store_artists(user) {
+	let artist_list_object = user.artists;
 	console.log("\nUpdating Artist Info")
 	let new_artists = get_new_artists(artist_list_object);
 	Promise.all(new_artists).then( (artists) => {
@@ -56,7 +57,7 @@ function store_artists(artist_list_object) {
 		let all_promises = [];
 
 		Object.keys(artist_list_object).forEach(function(key, index) {
-		    let dbRef = "artists/" + key;
+		    let dbRef = "users/" + user.id + "/artists/" + key;
 		    let artist_promise = new Promise ( (resolve) => {
 	    	    database.ref(dbRef).once("value", function(snapshot) {
 	    			if (!snapshot.val()) {
@@ -155,7 +156,7 @@ function save_user(user) {
 			}
 			else {
 				console.log("  Saved " + user.display_name + ".");
-				setTimeout( () => {store_artists(user.artists)}, 100);
+				setTimeout( () => {store_artists(user)}, 100);
 				resolve(true);				
 			}
 		});
@@ -209,6 +210,13 @@ function get_user(spotify_user) {
 }
 
 function update_user_access_token(user) {
+}
+
+function add_artist(user, artist) {
+	let dbRef = "users/" + user.id + "/artists/" + artist.id;
+	database.ref(dbRef).set(artist.name, (error) => {
+
+	});
 
 }
 
@@ -238,5 +246,6 @@ function create_user(spotify_user) {
 module.exports = {
 	get_user: get_user,
 	save_user: save_user,
+	add_artist: add_artist,
 	get_user_from_token: get_user_from_token
 };

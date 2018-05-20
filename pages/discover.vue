@@ -21,6 +21,8 @@
 			<h5>{{current_track.name}}</h5>
 			<h5>{{current_track.artist_name}}</h5>
 			<h5>{{current_track.album}}</h5>
+			<button v-if="current_track.song_saved == false" v-on:click="save_song(current_track.id)">Save Song</button>
+			<button v-if="current_track.song_saved == true" v-on:click="unsave_song(current_track.id)">Unsave Song</button>
 			<hr>
 			<div v-if="playlist.tracks">
 				<h5>{{playlist.tracks.items[current_track.playlist_index + 1].track.name}}</h5>
@@ -35,6 +37,7 @@
 <script>
 import axios from "~/plugins/axios";
 import spotify_endpoints from "../services/spotify_endpoints.js";
+import firebase_endpoints from "../services/firebase_endpoints.js";
 import { setInterval } from 'timers';
 
 
@@ -59,6 +62,7 @@ export default {
 				artist_name: '',
 				time: 0,
 				playing: null,
+				song_saved: false,
 				playlist_index: -1
 			},
 			loop_track_ids: '',
@@ -99,7 +103,6 @@ export default {
 						}
 						//if a new track has loaded
 						if (state.position == 0 && this.current_track.id != state.track_window.current_track.id) {
-							console.log("new track loaded");
 							this.current_track = {
 								id: state.track_window.current_track.id,
 								name: state.track_window.current_track.name,
@@ -110,11 +113,12 @@ export default {
 								length: state.track_window.current_track.duration_ms,
 								time: state.position,
 								playing: true,
-								playlist_index: this.current_track.playlist_index + 1
+								playlist_index: this.current_track.playlist_index + 1,
+								song_saved: this.current_track.song_saved
 							};
+							this.artist_discovered(this.current_track.artist_id);
 							this.almost_over = false;
 							if (this.loop_status) {
-								console.log("adding a looped song");
 								this.loop();
 							}
 						}
@@ -128,7 +132,8 @@ export default {
 							length: state.track_window.current_track.duration_ms,
 							time: state.position,
 							playing: true,
-							playlist_index: this.current_track.playlist_index
+							playlist_index: this.current_track.playlist_index,
+							song_saved: this.current_track.song_saved
 						};
 					}
 					else if (state.paused) {
@@ -142,7 +147,7 @@ export default {
 				// Ready
 				player.addListener('ready', function({ device_id }) {
 					this.device_id = device_id;
-					this.prepare_playlist(this.artist_bubbles[0].id);
+					this.prepare_playlist(this.artist_bubbles[0].id, false);
 				}.bind(this));
 
 				player.connect();
@@ -187,12 +192,18 @@ export default {
 		},
 		prepare_playlist: function(artist_id, offshoot) {
 			spotify_endpoints.get_playlist(artist_id, this.token, this.$store.state.user.id).then( function(playlist) {
-				this.playlist = playlist;
-				console.log(playlist);
-				spotify_endpoints.set_track(this.playlist.tracks.items[0].track.uri, this.token, this.device_id).then( function(){
-				}.bind(this), function(error) {
-					console.log(error);
-				});
+				if (!offshoot) {
+					this.playlist = playlist;
+					spotify_endpoints.set_track(this.playlist.tracks.items[0].track.uri, this.token, this.device_id).then( function(){
+					}.bind(this), function(error) {
+						console.log(error);
+					});
+				}
+				else {
+					let first_track = this.playlist.tracks.items[this.current_track.playlist_index];
+					this.playlist = playlist;
+					this.playlist.tracks.items.splice(0, 0, first_track);
+				}
 			}.bind(this));
 		},
 		pause: function() {
@@ -209,19 +220,33 @@ export default {
 			}.bind(this));
 		},
 		skip: function() {
-			spotify_endpoints.skip(this.token).then( function() {
+			let next_song_uri = this.playlist.tracks.items[this.current_track.playlist_index + 1].track.uri;
+			spotify_endpoints.set_track(next_song_uri, this.token, this.device_id).then( function() {
 				console.log("skipping");
+			}.bind(this));
+		},
+		save_song: function(song_id) {
+			spotify_endpoints.save_song(song_id, this.token).then( function(save_result) {
+				this.current_track.song_saved = true;
+			}.bind(this));
+		},
+		artist_discovered: function() {
+			firebase_endpoints.artist_discovered(this.current_track.artist_id, this.current_track.artist_name, this.token).then( function(result){
+				console.log(result);
+			});
+		},
+		unsave_song: function(song_id) {
+			spotify_endpoints.unsave_song(song_id, this.token).then( function(unsave_result) {
+				this.current_track.song_saved = false;
 			}.bind(this));
 		},
 		toggle_loop: function() {
 			this.loop_status = !this.loop_status;
 			if (this.loop_status) {
 				this.loop_track_ids += this.current_track.id + ",";
-				//queue song
 				this.loop();
 			}
 			else {
-				//unqueue song
 				this.unloop();
 			}
 		},
@@ -232,19 +257,12 @@ export default {
 			}.bind(this));
 		},
 		unloop: function() {
-			console.log("removing queued loop song");
-			//clear out the loop_track_ids
-			// spotify_endpoints.loop(this.token).then( function() {
-			// 	console.log("looping");
-			// 	//get one track from this artist
-			// 	//insert this track after the current song (but make sure to insert and not wipe out the other songs in the stream.)
-			// }.bind(this));
+			spotify_endpoints.unloop(this.playlist, this.current_track, this.$store.state.user.id, this.token).then( function(playlist) {
+				this.playlist = playlist;
+			}.bind(this));
 		},
 		offshoot: function() {
-			console.log(this.current_track.artist_id);
-			//get the similar artists to this artist
-			//get their tracks
-			//add the tracks after the current song (thereby wiping out the previous stream's songs)
+			this.prepare_playlist(this.current_track.artist_id, true);
 		}
 		
 	},
