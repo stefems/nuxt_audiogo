@@ -7,7 +7,6 @@
 	<h3>
 		Discover your next favorite band.
 	</h3>
-	<h6>{{$store.state.display_name}}</h6>
 	<a href="http://127.0.0.1:3000/api/spotify_login/send_to_spotify_for_login" class="continue-with-spotify">Continue with Spotify</a>
   </section>
 </template>
@@ -88,6 +87,9 @@ export default {
 </script>
 
 <style scoped>
+.logo {
+	padding-top: 30px;
+}
 .title {
   margin: 30px 0;
 }

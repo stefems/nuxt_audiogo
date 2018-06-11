@@ -1,8 +1,10 @@
 <template>
   <section class="container">
+	<div class="menu-options">
+		<span v-on:click="set_artist_bubbles($store.state.user.top_artists)" class="nav-text">reload favorites</span>
+		<span v-on:click="logout()" class="nav-text">logout</span>
+	</div>
    <h1>
-	   <!-- v-click="set_artist_bubbles($store.state.user.top_artists)" -->
-	   <span class="nav-text">reload favorites</span>
 	   <span>{{title}}</span>
 	</h1>
 
@@ -71,6 +73,11 @@ export default {
 		}
 	},
 	methods: {
+		logout: function() {
+			this.$store.commit('store_user', {});
+			this.$router.push("/");
+			sessionStorage.clear();
+		},
 		millisToMinutesAndSeconds: function(millis) {
 			var minutes = Math.floor(millis / 60000);
 			var seconds = ((millis % 60000) / 1000).toFixed(0);
@@ -273,7 +280,7 @@ export default {
 			this.token = JSON.parse(sessionStorage.getItem("showgo_user")).spotify_access_token;
 			this.set_artist_bubbles(this.$store.state.user.top_artists);
 		} else {
-			console.log("dont have user");
+			this.logout();
 		}
 	}
 };
@@ -285,11 +292,15 @@ export default {
 	text-decoration: underline;
 }
 
+.menu-options {
+	width: 100%;
+	text-align: left;
+    padding: 10px;
+}
+
 .nav-text {
 	font-size: 10px;
-    vertical-align: middle;
-    position: absolute;
-    left: 15px;
+	display: block;
     cursor: pointer;
     text-decoration: underline;
 }

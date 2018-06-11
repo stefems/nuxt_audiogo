@@ -125,24 +125,6 @@ function store_artists(user) {
 		}
 
 	}
-	
-		
-
-	//we need information about the artists in new_artists before saving it in our db, we'll get that info from spotify
-	//what is the route for getting that information
-	
-
-	// //counter to 50
-	// //for each id
-	// 	//increment counter
-	// 	//if 50, send away and reset counter
-
-	// 	//spotify lookup
-	
-		 			
-	// 	//last fm lookup
-	// 	//save to firebase
-	// });
 }
 
 function save_user(user) {
