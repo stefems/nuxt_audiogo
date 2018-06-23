@@ -1,15 +1,17 @@
 <template>
   <section class="container">
-	<div class="menu-options">
-		<span v-on:click="set_artist_bubbles($store.state.user.top_artists)" class="nav-text">reload favorites</span>
-		<span v-on:click="logout()" class="nav-text">logout</span>
-	</div>
-   <h1>
-	   <span>{{title}}</span>
-	</h1>
+	<my-header/>
 
-   <div v-on:click="open_stream(bubble)" class="artist-bubble" v-for="bubble in artist_bubbles" :key="bubble.id" v-bind:style="{ backgroundImage: 'url(' + bubble.url + ')' }">
-	   <span v-bind:id="bubble.id">{{bubble.name}}</span>
+	<my-tree v-bind:artistBubbles="artistBubbles"/>
+
+	<h1>
+		<span>{{title}}</span>
+	</h1>
+	<span v-on:click="set_artist_bubbles($store.state.user.top_artists)" class="nav-text">reload favorites</span>
+
+
+	<div v-on:click="open_stream(bubble)" class="artist-bubble" v-for="bubble in artistBubbles" :key="bubble.id" v-bind:style="{ backgroundImage: 'url(' + bubble.url + ')' }">
+		<span v-bind:id="bubble.id">{{bubble.name}}</span>
 	</div>
 
 	<div class="player" v-if="show_player">
@@ -38,15 +40,22 @@
 
 <script>
 import axios from "~/plugins/axios";
+import MyTree from '~/components/tree.vue'
+import MyHeader from '~/components/Header.vue'
+
 import spotify_endpoints from "../services/spotify_endpoints.js";
 import firebase_endpoints from "../services/firebase_endpoints.js";
 import { setInterval } from 'timers';
 
 
 export default {
+	components: {
+		MyTree,
+		MyHeader
+	},
 	data() {
 		return {
-			artist_bubbles: [],
+			artistBubbles: [],
 			token: '',
 			title: 'Root',
 			show_player: false,
@@ -84,7 +93,7 @@ export default {
 			return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 		},
 		open_stream: function(bubble) {
-			this.artist_bubbles = [bubble];
+			this.artistBubbles = [bubble];
 			this.title = "Tree";
 			this.show_player = true;
 			window.onSpotifyWebPlaybackSDKReady = function(){
@@ -154,13 +163,14 @@ export default {
 				// Ready
 				player.addListener('ready', function({ device_id }) {
 					this.device_id = device_id;
-					this.prepare_playlist(this.artist_bubbles[0].id, false);
+					this.prepare_playlist(this.artistBubbles[0].id, false);
 				}.bind(this));
 
 				player.connect();
 			}.bind(this);
 		},
 		set_artist_bubbles: function(top_artists) {
+			console.log('setting');
 			let artists_chosen = [];
 			this.randomProperty = function(obj) {
 				var keys = Object.keys(obj)
@@ -185,14 +195,11 @@ export default {
 				artists.forEach( (artist) => {
 					artist_promises.push(spotify_endpoints.get_artist_image(artist.id, this.token));
 				});
-
 				this.handle_all = function(results) {
-					this.artist_bubbles = results;
+					this.artistBubbles = results;
+					
 				};
-				
 				Promise.all(artist_promises).then(this.handle_all.bind(this));
-				
-				
 			}
 			
 			this.load_all_artists(artists_chosen);
@@ -290,19 +297,6 @@ export default {
 <style scoped>
 .active {
 	text-decoration: underline;
-}
-
-.menu-options {
-	width: 100%;
-	text-align: left;
-    padding: 10px;
-}
-
-.nav-text {
-	font-size: 10px;
-	display: block;
-    cursor: pointer;
-    text-decoration: underline;
 }
 .artist-bubble {
 	width: 150px;

@@ -167,7 +167,8 @@ export default {
 				resolve({
 					url: result.data.images[0].url,
 					id: result.data.id,
-					name: result.data.name
+					name: result.data.name,
+					image_size: { width: result.data.images[0].width, height: result.data.images[0].height}
 				});
 			});
 		});

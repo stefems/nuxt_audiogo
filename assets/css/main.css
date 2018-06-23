@@ -8,6 +8,10 @@ html, body
   margin: 0;
 }
 
+.container {
+	height: 80vh;
+}
+
 footer
 {
   padding: 20px;
@@ -21,12 +25,13 @@ a, a:hover, a:focus, a:visited
 }
 .continue-with-spotify {
 	background-color: #2ebd59;
-	font-size: 18px;
+	font-size: 1em;
 	text-decoration: none;
+	margin: 15px 0;
 	color: white;
 	line-height: 1.5;
 	border-radius: 500px;
-	padding: 11px 47px 9px;
+	padding: 11px 15px 9px;
 	transition: background-color .15s ease,border-color .15s ease,color .15s ease;
 	border-width: 0;
 	letter-spacing: 1.2px;
