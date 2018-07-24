@@ -2,7 +2,7 @@
   <section class="container">
 	<my-header/>
 
-	<my-tree v-bind:artistBubbles="artistBubbles"/>
+	<my-tree v-on:openstream="open_stream" v-bind:artistBubbles="artistBubbles"/>
 
 	<h1>
 		<span>{{title}}</span>
@@ -92,7 +92,13 @@ export default {
 			var seconds = ((millis % 60000) / 1000).toFixed(0);
 			return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 		},
-		open_stream: function(bubble) {
+		open_stream: function(id) {
+			let bubble = {};
+			this.artistBubbles.forEach(function(possible_bubble){
+				if (possible_bubble.id == id) {
+					bubble = possible_bubble;
+				}
+			})
 			this.artistBubbles = [bubble];
 			this.title = "Tree";
 			this.show_player = true;
@@ -170,7 +176,6 @@ export default {
 			}.bind(this);
 		},
 		set_artist_bubbles: function(top_artists) {
-			console.log('setting');
 			let artists_chosen = [];
 			this.randomProperty = function(obj) {
 				var keys = Object.keys(obj)
@@ -197,7 +202,6 @@ export default {
 				});
 				this.handle_all = function(results) {
 					this.artistBubbles = results;
-					
 				};
 				Promise.all(artist_promises).then(this.handle_all.bind(this));
 			}
