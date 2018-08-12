@@ -343,7 +343,8 @@ let export_me = {
 						});
 					});
 					if (body.next) {
-						recursively_get_artists_from_recents(artists, resolve, body.next);
+						//not defined???
+						recursively_get_recent_artists(artists, resolve, body.next);
 					}
 					else {
 						resolve(artists);

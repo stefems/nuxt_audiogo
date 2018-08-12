@@ -1,5 +1,5 @@
 <template>
-  <footer>
-    Website under development by Stefan Kowal: <a href="https://github.com/stefems" target="_blank">github.com/stefems</a>
-  </footer>
+	<footer>
+		 <script src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+	</footer>
 </template>

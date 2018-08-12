@@ -1,47 +1,80 @@
 <template>
-  <section class="container">
-	<my-header/>
+	<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
 
-	<my-tree v-on:openstream="open_stream" v-bind:artistBubbles="artistBubbles"/>
-
-	<h1>
-		<span>{{title}}</span>
-	</h1>
-	<span v-on:click="set_artist_bubbles($store.state.user.top_artists)" class="nav-text">reload favorites</span>
-
-
-	<div v-on:click="open_stream(bubble)" class="artist-bubble" v-for="bubble in artistBubbles" :key="bubble.id" v-bind:style="{ backgroundImage: 'url(' + bubble.url + ')' }">
-		<span v-bind:id="bubble.id">{{bubble.name}}</span>
-	</div>
-
-	<div class="player" v-if="show_player">
-		<div v-if="device_id != ''">
-			<button v-if="current_track.playing == true" v-on:click="pause()">Pause</button> 
-			<button v-if="current_track.playing == false" v-on:click="play()">Play</button>
-			<button v-on:click="skip()">Skip</button>
-			<button v-on:click="toggle_loop()">Loop</button>
-			<h6>loop status: {{loop_status}}</h6>
-			<button v-on:click="offshoot()">Offshoot</button>
-			<h5>{{current_track.name}}</h5>
-			<h5>{{current_track.artist_name}}</h5>
-			<h5>{{current_track.album}}</h5>
-			<button v-if="current_track.song_saved == false" v-on:click="save_song(current_track.id)">Save Song</button>
-			<button v-if="current_track.song_saved == true" v-on:click="unsave_song(current_track.id)">Unsave Song</button>
-			<hr>
-			<div v-if="playlist.tracks">
-				<h5>{{playlist.tracks.items[current_track.playlist_index + 1].track.name}}</h5>
+	<div class="android-header mdl-layout__header mdl-layout__header--waterfall">
+			<div aria-expanded="false" role="button" tabindex="0" class="mdl-layout__drawer-button"><i class="material-icons">menu</i></div>
+			<div class="mdl-layout__header-row">
+			<span class="android-title mdl-layout-title">
+				<img class="android-logo-image" src="~assets/img/bandaid.png">
+			</span>
+			<!-- Add spacer, to align navigation to the right in desktop -->
+			<div class="android-header-spacer mdl-layout-spacer"></div>
+			<!-- Navigation -->
+			<div class="android-navigation-container">
+				<nav class="android-navigation mdl-navigation">
+				<a class="mdl-navigation__link mdl-typography--text-uppercase" href="">Start Over</a>
+				</nav>
+			</div>
+			
+			<span class="android-mobile-title mdl-layout-title">
+				<img class="android-logo-image" src="~assets/img/bandaid.png">
+			</span>
 			</div>
 		</div>
-		<script src="https://sdk.scdn.co/spotify-player.js"></script>
-	</div>
+		<!-- Drawer -->
+		<div class="android-drawer mdl-layout__drawer">
+			<span class="mdl-layout-title">
+			<img class="android-logo-image" src="~assets/img/bandaid.png">
+			</span>
+			<nav class="mdl-navigation">
+			<a class="mdl-navigation__link" href="">Favorites</a>
+			<span class="mdl-navigation__link"  v-on:click="logout()" href="">Logout</span>
+			</nav>
+		</div>
+	<div class="android-content mdl-layout__content">
+		<!-- <my-tree v-on:openstream="open_stream" v-bind:artistBubbles="artistBubbles"/>
 
-  </section>
+		<h1>
+			<span>{{title}}</span>
+		</h1>
+		<span v-on:click="set_artist_bubbles($store.state.user.top_artists)" class="nav-text">reload favorites</span>
+
+
+		<div v-on:click="open_stream(bubble)" class="artist-bubble" v-for="bubble in artistBubbles" :key="bubble.id" v-bind:style="{ backgroundImage: 'url(' + bubble.url + ')' }">
+			<span v-bind:id="bubble.id">{{bubble.name}}</span>
+		</div>
+
+		<div class="player" v-if="show_player">
+			<div v-if="device_id != ''">
+				<button v-if="current_track.playing == true" v-on:click="pause()">Pause</button> 
+				<button v-if="current_track.playing == false" v-on:click="play()">Play</button>
+				<button v-on:click="skip()">Skip</button>
+				<button v-on:click="toggle_loop()">Loop</button>
+				<h6>loop status: {{loop_status}}</h6>
+				<button v-on:click="offshoot()">Offshoot</button>
+				<h5>{{current_track.name}}</h5>
+				<h5>{{current_track.artist_name}}</h5>
+				<h5>{{current_track.album}}</h5>
+				<button v-if="current_track.song_saved == false" v-on:click="save_song(current_track.id)">Save Song</button>
+				<button v-if="current_track.song_saved == true" v-on:click="unsave_song(current_track.id)">Unsave Song</button>
+				<hr>
+				<div v-if="playlist.tracks">
+					<h5>{{playlist.tracks.items[current_track.playlist_index + 1].track.name}}</h5>
+				</div>
+			</div>
+			<script src="https://sdk.scdn.co/spotify-player.js"></script>
+		</div> -->
+	</div>
+	<my-footer/>
+  </div>
 </template>
 
 <script>
 import axios from "~/plugins/axios";
 import MyTree from '~/components/tree.vue'
 import MyHeader from '~/components/Header.vue'
+import MyFooter from '~/components/Footer.vue'
+
 
 import spotify_endpoints from "../services/spotify_endpoints.js";
 import firebase_endpoints from "../services/firebase_endpoints.js";
@@ -51,7 +84,8 @@ import { setInterval } from 'timers';
 export default {
 	components: {
 		MyTree,
-		MyHeader
+		MyHeader,
+		MyFooter
 	},
 	data() {
 		return {
@@ -83,7 +117,7 @@ export default {
 	},
 	methods: {
 		logout: function() {
-			this.$store.commit('store_user', {});
+			this.$store.commit("store_user", {});
 			this.$router.push("/");
 			sessionStorage.clear();
 		},

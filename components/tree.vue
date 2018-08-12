@@ -10,9 +10,9 @@
 		</g>
 		<g>
 		<title>Layer 1</title>
-		<line stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_5" y2="164" x2="69.5" y1="201" x1="101.5" stroke-width="4" stroke="blue" fill="none"/>
-		<line stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_3" y2="75" x2="102" y1="290" x1="101" stroke-width="4" stroke="green" fill="none"/>
-		<line stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_4" y2="157" x2="151" y1="229" x1="101.5" stroke-width="4" stroke="red" fill="none"/>
+		<line stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_5" y2="164" x2="69.5" y1="201" x1="101.5" stroke-width="4" stroke="black" fill="none"/>
+		<line stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_3" y2="75" x2="102" y1="290" x1="101" stroke-width="4" stroke="black" fill="none"/>
+		<line stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_4" y2="157" x2="151" y1="229" x1="101.5" stroke-width="4" stroke="black" fill="none"/>
 
 		<defs>
 			<pattern id="pattern0" x="0" y="0" patternUnits="objectBoundingBox" height="1" width="1">

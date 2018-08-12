@@ -54,6 +54,8 @@ export default {
 					data = data.data;
 					this.$store.commit('store_user', data);
 					resolve(data);
+				}).catch( (err) => {
+					console.log(err);
 				});
 
 			} else {

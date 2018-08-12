@@ -1,11 +1,11 @@
 <template>
   <section class="container">
-    <my-tree/>
+    <!-- <my-tree/> -->
 	<!-- <img src="~assets/img/tree.png" alt="Nuxt.js Logo" class="logo" /> -->
     <h1 v-if="loaded">
     	audiotree
     </h1>
-	<h3 v-if="loaded">
+	<h3 class="slogan" v-if="loaded">
 		Discover your next favorite band.
 	</h3>
 	<a v-if="loaded" href="http://127.0.0.1:3000/api/spotify_login/send_to_spotify_for_login" class="continue-with-spotify">Continue with Spotify</a>
@@ -114,6 +114,9 @@ h1 {
 }
 h3 {
 	margin: .5em 0;
+}
+.slogan {
+	font-weight: 100;
 }
 
 .user {
