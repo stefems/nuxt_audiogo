@@ -32,38 +32,45 @@
 			</nav>
 		</div>
 	<div class="android-content mdl-layout__content">
-		<!-- <my-tree v-on:openstream="open_stream" v-bind:artistBubbles="artistBubbles"/>
-
-		<h1>
-			<span>{{title}}</span>
-		</h1>
-		<span v-on:click="set_artist_bubbles($store.state.user.top_artists)" class="nav-text">reload favorites</span>
-
-
-		<div v-on:click="open_stream(bubble)" class="artist-bubble" v-for="bubble in artistBubbles" :key="bubble.id" v-bind:style="{ backgroundImage: 'url(' + bubble.url + ')' }">
-			<span v-bind:id="bubble.id">{{bubble.name}}</span>
-		</div>
-
-		<div class="player" v-if="show_player">
-			<div v-if="device_id != ''">
-				<button v-if="current_track.playing == true" v-on:click="pause()">Pause</button> 
-				<button v-if="current_track.playing == false" v-on:click="play()">Play</button>
-				<button v-on:click="skip()">Skip</button>
-				<button v-on:click="toggle_loop()">Loop</button>
-				<h6>loop status: {{loop_status}}</h6>
-				<button v-on:click="offshoot()">Offshoot</button>
-				<h5>{{current_track.name}}</h5>
-				<h5>{{current_track.artist_name}}</h5>
-				<h5>{{current_track.album}}</h5>
-				<button v-if="current_track.song_saved == false" v-on:click="save_song(current_track.id)">Save Song</button>
-				<button v-if="current_track.song_saved == true" v-on:click="unsave_song(current_track.id)">Unsave Song</button>
-				<hr>
-				<div v-if="playlist.tracks">
-					<h5>{{playlist.tracks.items[current_track.playlist_index + 1].track.name}}</h5>
+		<div class="search-section">
+			<h4>Search for a band or pick one from your favorites below</h4>
+			<div class="search-bar">
+				<input v-on:input="searchHandler($event.target.value)" placeholder="Search" type="text">
+				<i class="material-icons">search</i>
+			</div>
+			<div v-if="artistBubbles.length > 0" class="results-container">
+				<div class="bubble-container" v-for="bubble in artistBubbles" :key="bubble.id">
+					<div v-on:click="open_stream(bubble)" class="artist-bubble" v-bind:style="{ backgroundImage: 'url(' + bubble.url + ')' }">
+						<span v-bind:id="bubble.id">{{bubble.name}}</span>
+					</div>
 				</div>
 			</div>
-			<script src="https://sdk.scdn.co/spotify-player.js"></script>
-		</div> -->
+		</div>
+		<div class="listen-section">
+
+		</div>
+		<div class="stream-section">
+			<div class="player" v-if="show_player">
+				<div v-if="device_id != ''">
+					<button v-if="current_track.playing == true" v-on:click="pause()">Pause</button> 
+					<button v-if="current_track.playing == false" v-on:click="play()">Play</button>
+					<button v-on:click="skip()">Skip</button>
+					<button v-on:click="toggle_loop()">Loop</button>
+					<h6>loop status: {{loop_status}}</h6>
+					<button v-on:click="offshoot()">Offshoot</button>
+					<h5>{{current_track.name}}</h5>
+					<h5>{{current_track.artist_name}}</h5>
+					<h5>{{current_track.album}}</h5>
+					<button v-if="current_track.song_saved == false" v-on:click="save_song(current_track.id)">Save Song</button>
+					<button v-if="current_track.song_saved == true" v-on:click="unsave_song(current_track.id)">Unsave Song</button>
+					<hr>
+					<div v-if="playlist.tracks">
+						<h5>{{playlist.tracks.items[current_track.playlist_index + 1].track.name}}</h5>
+					</div>
+				</div>
+				<script src="https://sdk.scdn.co/spotify-player.js"></script>
+			</div>
+		</div>
 	</div>
 	<my-footer/>
   </div>
@@ -116,6 +123,17 @@ export default {
 		}
 	},
 	methods: {
+		searchHandler: function(val) {
+			if (val != '') {
+				spotify_endpoints.search_band(val, this.token).then( (resolved_results) => {
+					this.artistBubbles = resolved_results;
+				});
+			}
+			else {
+				this.set_artist_bubbles(this.$store.state.user.top_artists);
+			}
+			
+		},
 		logout: function() {
 			this.$store.commit("store_user", {});
 			this.$router.push("/");
@@ -126,20 +144,24 @@ export default {
 			var seconds = ((millis % 60000) / 1000).toFixed(0);
 			return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 		},
-		open_stream: function(id) {
-			let bubble = {};
-			this.artistBubbles.forEach(function(possible_bubble){
-				if (possible_bubble.id == id) {
-					bubble = possible_bubble;
-				}
-			})
+		open_stream: function(bubble) {
+			// let bubble = {};
+			console.log("opening stream");
+			console.log(bubble);
+			// this.artistBubbles.forEach(function(possible_bubble){
+			// 	// console.log(possible_bubble);
+			// 	if (possible_bubble.id == id) {
+			// 		bubble = Object.assign({}, possible_bubble);
+			// 	}
+			// })
+			this.artistBubbles = null;
 			this.artistBubbles = [bubble];
 			this.title = "Tree";
 			this.show_player = true;
 			window.onSpotifyWebPlaybackSDKReady = function(){
 				const token = this.token;
 				const player = new Spotify.Player({
-					name: 'Web Playback SDK Quick Start Player',
+					name: 'Band Finder',
 					getOAuthToken: cb => {
 						cb(token);
 					}
@@ -203,7 +225,7 @@ export default {
 				// Ready
 				player.addListener('ready', function({ device_id }) {
 					this.device_id = device_id;
-					this.prepare_playlist(this.artistBubbles[0].id, false);
+					this.prepare_playlist(bubble.id, false);
 				}.bind(this));
 
 				player.connect();
@@ -211,6 +233,7 @@ export default {
 		},
 		set_artist_bubbles: function(top_artists) {
 			let artists_chosen = [];
+			let artist_map = {};
 			this.randomProperty = function(obj) {
 				var keys = Object.keys(obj)
 				let field_number = keys.length * Math.random() << 0;
@@ -219,13 +242,19 @@ export default {
 					id: keys[field_number]
 				};
 			};
-			for (let i = 0; i < 3; i++) {
+			for (let i = 0; i < 20; i++) {
 				let random_artist = this.randomProperty(top_artists);
-				//TODO: doesn't seem to be working to prevent duplicates
-				while (artists_chosen.indexOf(random_artist) != -1) {
-					random_artist = this.randomProperty(top_artists);
+				if (!artist_map[random_artist.id]) {
+					artist_map[random_artist.id] = random_artist;
+					artists_chosen.push(random_artist);
 				}
-				artists_chosen.push(random_artist);
+				else {
+					while (artist_map[random_artist.id]) {
+						random_artist = this.randomProperty(top_artists);
+					}
+					artist_map[random_artist.id] = random_artist;
+					artists_chosen.push(random_artist);
+				}
 			}
 
 
@@ -333,15 +362,47 @@ export default {
 </script>
 
 <style scoped>
-.active {
-	text-decoration: underline;
+.mdl-layout__content {
+	padding: 10px;
+}
+.search-bar {
+	display: flex;
+	align-items: center;
+	margin-bottom: 20px;
+}
+.search-bar input {
+	border: none;
+	outline: none;
+	border-bottom: solid lightgrey 1px;
+	margin: auto;
+	height: 40px;
+	font-size: 18px;
+	width: 90vw;
+}
+.search-bar i {
+	color: lightgrey;
+	margin: auto;
+	cursor: pointer;
+}
+.results-container {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+.bubble-container {
+	display: inline-block;
+	flex-grow: 1;
+	width: 25%;
+	flex: 1 0 200px;
+	margin: 0 auto;
 }
 .artist-bubble {
 	width: 150px;
+	display: block;
 	height: 150px;
+	margin: 10px auto;
 	border-radius: 50%;
 	background-color: lightgrey;
-	margin: 10px auto;
 	background-size: contain;
 	animation: animate 3s linear infinite;
 	font-size: 20px;
@@ -349,6 +410,13 @@ export default {
 	font-family: verdana, sans-serif;
 	cursor: pointer;
 }
+
+
+/* OLD STUFF BELOW */
+.active {
+	text-decoration: underline;
+}
+
 .artist-bubble span {
 	color: white;
     vertical-align: middle;

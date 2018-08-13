@@ -1,8 +1,33 @@
 import axios from "~/plugins/axios";
 
-function get_song(artist_id, token) {
+function search_band(name, token) {
 	axios.defaults.headers.common['Authorization'] = "Bearer " + token;
 
+	let band_search_promise = new Promise( (resolve) => {
+		axios.get("https://api.spotify.com/v1/search?type=artist&q=" + name).then( (result) => {
+			let artists = [];
+			artists = result.data.artists.items;
+				result.data.artists.items.forEach( (artist) => {
+					if (artist.images[0]) {
+						artist.url = artist.images[0].url;
+						artist.image_size = { width: artist.images[0].width, height: artist.images[0].height}
+					}
+					else {
+						artist.url = null;
+					}
+				});
+			resolve(artists);
+		});
+	});
+
+	return band_search_promise;
+}
+
+function get_song(artist_id, token) {
+	axios.defaults.headers.common['Authorization'] = "Bearer " + token;
+	if (!artist_id || artist_id == '' || artist_id == 'null') {
+		return Promise.resolve();
+	}
 	let artist_track_promise = new Promise( (resolve) => {
 		axios.get("https://api.spotify.com/v1/artists/" + artist_id + "/top-tracks?country=US").then( (result) => {
 			let track_id = result.data.tracks[0].uri;
@@ -81,14 +106,23 @@ export default {
 
 	get_songs: get_songs,
 	get_song: get_song,
+	search_band: search_band,
 	play: play,
 	set_playlist: set_playlist,
 	get_playlist: function(artist_id, token, user_id) {
 		let playlist_promise = new Promise( (resolve) => {
 			axios.get("/api/artists/get_similar_artists/" + artist_id + "?access_token=" + token).then( (result) => {
+				if (!result || result == null || result == 'null') {
+					console.log("got null");
+					resolve();
+					return;
+				}
 				let ids = result.data.split(",");
 				let songs = [];
 				ids.forEach( (artist_id) => {
+					if (!artist_id || artist_id == null || artist_id == 'null' || artist_id == '') {
+						return Promise.resolve();
+					}
 					let song_promise = new Promise( (resolve) => {
 						get_song(artist_id, token).then( (track) => {
 							resolve(track);
@@ -97,6 +131,7 @@ export default {
 					songs.push(song_promise);
 				});
 				Promise.all(songs).then( (tracks) => {
+					console.log(tracks);
 					let string_track_ids = '';
 					tracks.forEach( (track) => {
 						string_track_ids += "," + track.id;
