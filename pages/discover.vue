@@ -4,22 +4,11 @@
 	<div class="android-header mdl-layout__header mdl-layout__header--waterfall">
 			<div aria-expanded="false" role="button" tabindex="0" class="mdl-layout__drawer-button"><i class="material-icons">menu</i></div>
 			<div class="mdl-layout__header-row">
-			<span class="android-title mdl-layout-title">
-				<img class="android-logo-image" src="~assets/img/bandaid.png">
-			</span>
-			<!-- Add spacer, to align navigation to the right in desktop -->
-			<div class="android-header-spacer mdl-layout-spacer"></div>
-			<!-- Navigation -->
-			<div class="android-navigation-container">
-				<nav class="android-navigation mdl-navigation">
-				<a class="mdl-navigation__link mdl-typography--text-uppercase" href="">Start Over</a>
-				</nav>
+				<span class="title-image">
+					<img src="~assets/img/bandaid.png">
+				</span>
 			</div>
-			
-			<span class="android-mobile-title mdl-layout-title">
-				<img class="android-logo-image" src="~assets/img/bandaid.png">
-			</span>
-			</div>
+			<i class="material-icons search-icon header-search" v-bind:class="{ invisible: !searchAtTop }">search</i>
 		</div>
 		<!-- Drawer -->
 		<div class="android-drawer mdl-layout__drawer">
@@ -32,11 +21,11 @@
 			</nav>
 		</div>
 	<div class="android-content mdl-layout__content">
-		<div class="search-section">
+		<div class="search-section" v-bind:class="{ animatehide: animateHide }">
 			<h4>Search for a band or pick one from your favorites below</h4>
 			<div class="search-bar">
 				<input v-on:input="searchHandler($event.target.value)" placeholder="Search" type="text">
-				<i class="material-icons">search</i>
+				<i class="material-icons search-icon">search</i>
 			</div>
 			<div v-if="artistBubbles.length > 0" class="results-container">
 				<div class="bubble-container" v-for="bubble in artistBubbles" :key="bubble.id">
@@ -96,6 +85,8 @@ export default {
 	},
 	data() {
 		return {
+			searchAtTop: false,
+			animateHide: false,
 			artistBubbles: [],
 			token: '',
 			title: 'Root',
@@ -145,15 +136,10 @@ export default {
 			return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 		},
 		open_stream: function(bubble) {
-			// let bubble = {};
-			console.log("opening stream");
-			console.log(bubble);
-			// this.artistBubbles.forEach(function(possible_bubble){
-			// 	// console.log(possible_bubble);
-			// 	if (possible_bubble.id == id) {
-			// 		bubble = Object.assign({}, possible_bubble);
-			// 	}
-			// })
+			this.animateHide = true;
+			setTimeout( () => {
+				this.searchAtTop = true;
+			}, 1000);
 			this.artistBubbles = null;
 			this.artistBubbles = [bubble];
 			this.title = "Tree";
@@ -362,13 +348,28 @@ export default {
 </script>
 
 <style scoped>
+.invisible {
+	visibility: hidden !important;
+}
 .mdl-layout__content {
 	padding: 10px;
+}
+.mdl-layout__header-row {
+	padding: 0 16px 0 16px;
 }
 .search-bar {
 	display: flex;
 	align-items: center;
 	margin-bottom: 20px;
+}
+.title-image {
+	margin: auto;
+}
+.title-image img {
+	height: 56px;
+}
+.search-section {
+	position: relative;
 }
 .search-bar input {
 	border: none;
@@ -379,10 +380,15 @@ export default {
 	font-size: 18px;
 	width: 90vw;
 }
-.search-bar i {
+.search-icon{
 	color: lightgrey;
-	margin: auto;
 	cursor: pointer;
+	display: inline;
+}
+.search-icon.header-search {
+	position: absolute;
+	right: 16px;
+	top: 14px;
 }
 .results-container {
 	display: flex;
@@ -409,6 +415,16 @@ export default {
 	text-align: center;
 	font-family: verdana, sans-serif;
 	cursor: pointer;
+}
+.search-section.animatehide {
+	animation-name: hide-search-section;
+	animation-duration: 1s;
+	animation-iteration-count: 1;
+	animation-fill-mode: forwards;
+}
+@keyframes hide-search-section {
+	from {top: 0;}
+	to {top: -130px;}
 }
 
 
